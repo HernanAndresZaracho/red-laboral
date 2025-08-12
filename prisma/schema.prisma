@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+/* 
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+} */
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  name      String?
+  photoUrl  String?
+  role        Role         @default(APPLICANT) // Roles: APPLICANT, EMPLOYER, ADMIN
+  createdAt   DateTime     @default(now())
+
+  applicantProfile ApplicantProfile? // Perfil extendido para postulantes
+  employerProfile  EmployerProfile?  // Perfil para empleadores
+
+  applications Application[]   // postulaciones hechas (si es applicant)
+  jobOffers    JobOffer[]      // ofertas creadas (si es employer)
+  notifications Notification[] // notificaciones recibidas
+
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  reportsMade      Report[]  @relation("ReportedBy")
+  reportsReceived  Report[]  @relation("ReportedUser")
+}
+
+enum Role {
+  APPLICANT
+  EMPLOYER
+  ADMIN
+}
+
+model ApplicantProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  cvUrl   String?  // URL del CV
+  bio      String?  // Breve biografía
+  experience String? // Experiencia laboral previa
+  education String? // Educación del postulante
+  createdAt DateTime @default(now())
+
+  skills   Skill[]   // Relación con habilidades del postulante
+}
+
+model Skill {
+  id                 Int                @id @default(autoincrement())
+  name               String
+  applicantProfileId Int
+  applicantProfile   ApplicantProfile   @relation(fields: [applicantProfileId], references: [id])
+
+  @@index([applicantProfileId])
+}
+model EmployerProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  companyName String   // Nombre de la empresa
+  companyBio  String?  // Breve biografía de la empresa
+  websiteUrl  String?  // URL del sitio web de la empresa
+  createdAt   DateTime @default(now())
+}
+model JobOffer {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String
+  applications Application[]
+  employerId  Int
+  employer    User         @relation(fields: [employerId], references: [id])
+  @@index([employerId])
+}
+
+model Application {
+  id          Int       @id @default(autoincrement())
+  applicantId Int
+  jobOfferId  Int
+  applicant   User      @relation(fields: [applicantId], references: [id])
+  jobOffer    JobOffer  @relation(fields: [jobOfferId], references: [id])
+  @@index([jobOfferId])
+  @@index([applicantId])
+}
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
+}
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  INTERVIEWING
+}
+model Notification {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  message     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+model Message {
+  id          Int      @id @default(autoincrement())
+  senderId    Int
+  receiverId  Int
+  content     String
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
+model Report {
+  id          Int      @id @default(autoincrement())
+  reporterId  Int
+  reportedId  Int
+  reason      String
+  createdAt   DateTime @default(now())
+  status      ReportStatus @default(PENDING)
+  reporter    User     @relation("ReportedBy", fields: [reporterId], references: [id])
+  reported    User     @relation("ReportedUser", fields: [reportedId], references: [id])
+}
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  REJECTED
+}
