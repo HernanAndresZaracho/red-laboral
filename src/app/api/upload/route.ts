@@ -8,7 +8,7 @@ export const config = {
   },
 };
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
   return new Promise((resolve, reject) => {
     const form = new IncomingForm({
       uploadDir: path.join(process.cwd(), "/public/uploads"),
@@ -16,7 +16,8 @@ export async function POST(req: Request) {
     });
     form.parse(req as unknown as IncomingMessage, (err, fields, files) => {
       if (err) {
-        reject(
+        resolve(
+          // cambia reject por resolve para devolver un Response correcto
           new Response(JSON.stringify({ error: "Error uploading file" }), {
             status: 500,
           })
@@ -29,9 +30,11 @@ export async function POST(req: Request) {
           JSON.stringify({
             fields,
             file:
-              files.file && files.file[0] ? files.file[0].newFilename : null,
+              files.file && Array.isArray(files.file) && files.file[0]
+                ? files.file[0].newFilename
+                : null,
             path:
-              files.file && files.file[0]
+              files.file && Array.isArray(files.file) && files.file[0]
                 ? `/uploads/${files.file[0].newFilename}`
                 : null,
           }),
