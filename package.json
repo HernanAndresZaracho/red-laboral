@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
+    "@prisma/client": "^6.13.0",
     "bcrypt": "^6.0.0",
     "formidable": "^3.5.4",
     "leaflet": "^1.9.4",
